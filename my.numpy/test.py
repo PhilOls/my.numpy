@@ -8,7 +8,7 @@ import sklearn.linear_model
 from planar_utils import plot_decision_boundary, sigmoid, load_planar_dataset, load_extra_datasets
 from mydef import *
 
-#%matplotlib inline
+#matplotlib inline
 
 np.random.seed(1) # set a seed so that the results are consistent
 

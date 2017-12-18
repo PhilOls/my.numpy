@@ -45,10 +45,10 @@ def initialize_parameters(n_x, n_h, n_y):
     np.random.seed(2) # we set up a seed so that your output matches ours although the initialization is random.
     
     ### START CODE HERE ### ( 4 lines of code)
-    W1 = np.random.randn(n_h,n_x) * 0.01
-    b1 = np.zeros((n_h,1))
-    W2 = np.random.randn(n_y,n_h) * 0.01
-    b2 = np.zeros((n_y,1))
+    W1 = np.random.randn(n_h,n_x).astype(np.float16) * 0.01
+    b1 = np.zeros((n_h,1)).astype(np.float16)
+    W2 = np.random.randn(n_y,n_h).astype(np.float16) * 0.01
+    b2 = np.zeros((n_y,1)).astype(np.float16)
     ### END CODE HERE ###
     
     assert (W1.shape == (n_h, n_x))
@@ -59,11 +59,12 @@ def initialize_parameters(n_x, n_h, n_y):
     parameters = {"W1": W1,
                   "b1": b1,
                   "W2": W2,
-                  "b2": b2}
+                  "b2": b2,
+                  "activation": "tanh"}
     
     return parameters
 
-def forward_propagation(X, parameters):
+def forward_propagation(X, parameters, activation="tanh"):
     """
     Argument:
     X -- input data of size (n_x, m)
@@ -83,12 +84,13 @@ def forward_propagation(X, parameters):
     
     # Implement Forward Propagation to calculate A2 (probabilities)
     ### START CODE HERE ### ( 4 lines of code)
-    Z1 = np.dot(W1,X) + b1
-    A1 = np.tanh(Z1)
-    #RELU
-    #A1 = np.maximum(np.zeros((Z1.shape)),Z1)
-    Z2 = np.dot(W2,A1) + b2
-    A2 = sigmoid(Z2)
+    Z1 = np.dot(W1,X).astype(np.float16) + b1
+    if (activation=="relu"):
+        A1 = np.maximum(np.zeros((Z1.shape)),Z1).astype(np.float16)
+    else:
+        A1 = np.tanh(Z1).astype(np.float16)
+    Z2 = np.dot(W2,A1).astype(np.float16) + b2
+    A2 = sigmoid(Z2).astype(np.float16)
     ### END CODE HERE ###
     
     assert(A2.shape == (1, X.shape[1]))
@@ -127,7 +129,7 @@ def compute_cost(A2, Y, parameters):
     
     return cost
 
-def backward_propagation(parameters, cache, X, Y):
+def backward_propagation(parameters, cache, X, Y, activation = "tanh"):
     """
     Implement the backward propagation using the instructions above.
     
@@ -159,10 +161,11 @@ def backward_propagation(parameters, cache, X, Y):
     dZ2 = np.subtract(A2,Y)
     dW2 = np.dot(dZ2,A1.T)/m
     db2 = np.sum(dZ2, axis=1, keepdims=True)/m
-    dZ1 = np.multiply(np.dot(W2.T,dZ2),1 - np.power(A1, 2))
-    #RELU:
-    #dA1 = (A1 >=0)
-    #dZ1 = np.multiply(np.dot(W2.T,dZ2),dA1.astype(float))    
+    if activation=="relu":
+        dA1 = (A1 >=0)
+        dZ1 = np.multiply(np.dot(W2.T,dZ2),dA1.astype(float))
+    else:
+        dZ1 = np.multiply(np.dot(W2.T,dZ2),1 - np.power(A1, 2))
     dW1 = np.dot(dZ1,X.T)/m
     db1 = np.sum(dZ1, axis=1, keepdims=True)/m
     ### END CODE HERE ###
@@ -216,7 +219,7 @@ def update_parameters(parameters, grads, learning_rate = 1.2):
     
     return parameters
 
-def nn_model(X, Y, n_h, num_iterations = 10000, print_cost=False):
+def nn_model(X, Y, n_h, num_iterations = 10000, activation="tanh", print_cost=False):
     """
     Arguments:
     X -- dataset of shape (2, number of examples)
@@ -248,13 +251,13 @@ def nn_model(X, Y, n_h, num_iterations = 10000, print_cost=False):
          
         ### START CODE HERE ### (4 lines of code)
         # Forward propagation. Inputs: "X, parameters". Outputs: "A2, cache".
-        A2, cache = forward_propagation(X, parameters)
+        A2, cache = forward_propagation(X, parameters, activation)
         
         # Cost function. Inputs: "A2, Y, parameters". Outputs: "cost".
         cost = compute_cost(A2, Y, parameters)
  
         # Backpropagation. Inputs: "parameters, cache, X, Y". Outputs: "grads".
-        grads = backward_propagation(parameters, cache, X, Y)
+        grads = backward_propagation(parameters, cache, X, Y, activation)
  
         # Gradient descent parameter update. Inputs: "parameters, grads". Outputs: "parameters".
         parameters = update_parameters(parameters, grads)
@@ -267,7 +270,7 @@ def nn_model(X, Y, n_h, num_iterations = 10000, print_cost=False):
 
     return parameters
 
-def predict(parameters, X):
+def predict(parameters, X, activation ="tanh"):
     """
     Using the learned parameters, predicts a class for each example in X
     
@@ -281,7 +284,7 @@ def predict(parameters, X):
     
     # Computes probabilities using forward propagation, and classifies to 0/1 using 0.5 as the threshold.
     ### START CODE HERE ### ( 2 lines of code)
-    A2, cache = forward_propagation(X, parameters)
+    A2, cache = forward_propagation(X, parameters,activation)
     predictions = (A2 > 0.5)
     ### END CODE HERE ###
     
